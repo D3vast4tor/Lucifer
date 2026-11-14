@@ -1,0 +1,128 @@
+default_model: lucifer
+models:
+  - id: lucifer
+    display_name: Lucifer
+    backend: strata
+    served_model_name: Lucifer
+    path: ../var/strata/models/packs/deepseek-v4.1-flash-ist-das-2.00bpw
+    endpoint: http://127.0.0.1:8089/v1
+    port: 8089
+    context_length: 1048576
+    # Use the full native window advertised by the prepared pack. Runtime status
+    # remains authoritative for the active allocation; this is not an output claim.
+    max_output_tokens: 262144
+    startup_timeout: 3600
+    enable_lora: false
+    thinking_mode: "off"
+    chat_template_kwargs: {enable_thinking: false}
+    # Explicit declarations for the pinned Strata 0.1.59 engine / Control 0.1.59.1.
+    # Startup metadata overrides these hints. No declaration is a live verification.
+    capabilities:
+      chat_completions:
+        status: advertised
+        endpoints: [/v1/chat/completions]
+        evidence: ["https://github.com/Niko1221/Strata/blob/v0.2.13/serve/server.py#L8558"]
+      anthropic_messages:
+        status: advertised
+        endpoints: [/v1/messages]
+        evidence: ["https://github.com/Niko1221/Strata/blob/v0.2.13/serve/server.py#L8831"]
+      responses:
+        status: advertised
+        endpoints: [/v1/responses]
+        evidence: ["https://github.com/Niko1221/Strata/blob/v0.2.13/serve/server.py#L8672"]
+        constraints: {stateless: true, stored_response_retrieval: false, stored_response_cancellation: false}
+      streaming:
+        status: advertised
+        evidence: ["https://github.com/Niko1221/Strata/blob/v0.2.13/serve/server.py#L7100"]
+        constraints: {protocols: [chat_completions, anthropic_messages, responses]}
+      tools:
+        status: advertised
+        evidence: ["https://github.com/Niko1221/Strata/blob/v0.2.13/serve/frontend.py#L577", "https://github.com/Niko1221/Strata/blob/v0.2.13/serve/dsml.py"]
+        constraints: {grammar_constrained: false, local_argument_validation_required: true, execution_owned_by_client: true}
+      reasoning:
+        status: advertised
+        evidence: ["https://github.com/Niko1221/Strata/blob/v0.2.13/serve/server.py#L7140"]
+        constraints: {modes: ["off", low, medium, high, max], separate_output_channel: true, raw_channel_persistence: false, history_field: reasoning_content, preserve_history_with_tools: true}
+      vision:
+        status: advertised
+        evidence: ["https://github.com/Niko1221/Strata/blob/v0.2.13/serve/server.py#L5833"]
+        constraints: {requires_enabled_runtime_tower: true, file_and_network_policy_required: true}
+      structured_output:
+        status: advertised
+        evidence: ["https://github.com/Niko1221/Strata/blob/v0.2.13/serve/structured.py#L75", "https://github.com/Niko1221/Strata/blob/v0.2.13/serve/server.py#L8567"]
+        constraints:
+          formats: [json_object, json_schema]
+          method: prompt_and_validate
+          constrained_decoding: false
+          stream_buffered: true
+          full_schema_validation: false
+          full_schema_validation_note: "Bundled Python lacked optional jsonschema at the 2026-11-12 check; validate locally"
+          chat_completions_response_format_with_tools: false
+          local_result_validation_required: true
+      usage:
+        status: advertised
+        evidence: ["https://github.com/Niko1221/Strata/blob/v0.2.13/serve/server.py#L7162"]
+        constraints: {stream_usage_location: final_chunk, cached_prompt_tokens: true}
+      cancellation:
+        status: advertised
+        evidence: ["https://github.com/Niko1221/Strata/blob/v0.2.13/serve/server.py#L7646"]
+        constraints: {mechanism: close_owned_http_request, scoped_to_request: true}
+      token_counting:
+        status: advertised
+        endpoints: [/v1/messages/count_tokens]
+        evidence: ["https://github.com/Niko1221/Strata/blob/v0.2.13/serve/server.py#L8822"]
+        constraints: {requires_anthropic_message_shape: true, performs_inference: false}
+      tokenization:
+        status: unknown
+        evidence: ["https://github.com/Niko1221/Strata/blob/v0.2.13/serve/server.py"]
+        constraints: {standalone_http_endpoint_advertised: false, prepared_local_tokenizer_present: true}
+      mcp:
+        status: advertised
+        endpoints: [/mcp]
+        evidence: ["https://github.com/Niko1221/Strata/blob/v0.2.13/serve/server.py#L6835", "https://github.com/Niko1221/Strata/blob/v0.2.13/serve/server.py#L8593"]
+        constraints: {configured: false, enabled: false, requires_explicit_server_configuration: true, request_opt_in: strata_mcp}
+    # Cache placement benchmark: var/benchmarks/strata-cache-20261112/results.json.
+    # Decimal GB RAM budget; hybrid LFU/LRU eviction; cache short prompt reads.
+    env:
+      DS4_STORE_GB: "46"
+      DS4_STORE_POLICY: "2"
+      DS4_FLOW_BUFFERED: "1024"
+      DS4_STREAM: "0"
+    runtime_command: [../scripts/serve-strata]
+    description: "Lucifer primary model · full six-expert inference · GPU, RAM and NVMe streaming"
+  - id: demo
+    backend: demo
+    description: "Explicit demonstration backend; no LLM weights or learning"
+  - id: lucifer-train
+    backend: vllm
+    # Pin the same cached checkpoint/tokenizer revision used by data review.
+    path: /home/Lucifer/models/Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+    training_model: /home/Lucifer/models/Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+    served_model_name: Lucifer
+    executable: ../scripts/vllm
+    port: 8091
+    context_length: 4096
+    max_output_tokens: 2048
+    gpu_memory_utilization: 0.8
+    enable_lora: true
+    max_loras: 1
+    max_lora_rank: 32
+    gpu_devices: all
+    chat_template_kwargs: {enable_thinking: false}
+    env:
+      VLLM_USE_FLASHINFER_SAMPLER: "0"
+      HF_HUB_OFFLINE: "1"
+    extra_args: ["--language-model-only", "--enforce-eager", "--max-num-seqs", "1", "--max-num-batched-tokens", "512"]
+  - id: gguf-local
+    backend: llama.cpp
+    path: /models/model.gguf
+    served_model_name: gguf-local
+    port: 8092
+    context_length: 4096
+    n_gpu_layers: -1
+    description: "Set path to a real GGUF file and install llama-server"
+  - id: external
+    backend: external
+    endpoint: http://127.0.0.1:8080/v1
+    served_model_name: local-model
+    description: "Attach to an existing OpenAI-compatible model server"

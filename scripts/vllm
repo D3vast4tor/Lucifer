@@ -1,0 +1,6 @@
+#!/bin/sh
+# Use the interpreter directly: copied venv console-script shebangs may be stale.
+set -eu
+PROJECT_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
+VLLM_PYTHON=${LUCIFER_VLLM_PYTHON:-"$PROJECT_ROOT/../vLLM/Lucifer/bin/python"}
+exec "$VLLM_PYTHON" -m vllm.entrypoints.cli.main "$@"

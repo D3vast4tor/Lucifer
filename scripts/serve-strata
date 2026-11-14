@@ -1,0 +1,28 @@
+#!/bin/sh
+set -eu
+PROJECT_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
+RUNTIME_ROOT="$PROJECT_ROOT/var/strata"
+
+# Repair generated local metadata once per initialization after a checkout move.
+/usr/bin/python3 "$PROJECT_ROOT/scripts/prepare_strata.py" "$RUNTIME_ROOT"
+
+export STRATA_FEED=https://github.com/Niko1221/Strata/releases/download/v0.2.13
+export STRATA_UPDATE_FEED="$STRATA_FEED"
+export STRATA_DATA_DIR="$RUNTIME_ROOT/data"
+export XDG_DATA_HOME="$RUNTIME_ROOT/data"
+export XDG_CONFIG_HOME="$RUNTIME_ROOT/config"
+export XDG_CACHE_HOME="$RUNTIME_ROOT/cache"
+export XDG_STATE_HOME="$RUNTIME_ROOT/state"
+export STRATA_DS4_SLOT_KEEP=0
+unset STRATA_DEBUG
+SELECTED_PROFILE=${LUCIFER_STRATA_PROFILE:-"$RUNTIME_ROOT/lucifer-profile.json"}
+if [ -z "${LUCIFER_STRATA_PROFILE:-}" ]; then
+  /usr/bin/python3 "$RUNTIME_ROOT/prepare-lucifer.py" --sync-native-context
+fi
+if [ ! -f "$SELECTED_PROFILE" ]; then
+  printf '%s\n' "Lucifer runtime profile does not exist: $SELECTED_PROFILE" >&2
+  exit 1
+fi
+exec "$RUNTIME_ROOT/data/terminal/current/bin/strata" serve \
+  --profile "$SELECTED_PROFILE" \
+  --host 127.0.0.1 --port 8089 --parallel 1 --offline --output jsonl

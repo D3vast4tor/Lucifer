@@ -1,0 +1,10 @@
+# Set LUCIFER_MCP_CONFIG to an explicit copy of this file before backend startup.
+# Nothing connects while enabled is false. Keep credentials in environment vars.
+servers:
+  - name: workspace_service
+    url: http://127.0.0.1:8098/mcp
+    enabled: false
+    allowed_tools: [list_documents, read_document]
+    allow_mutations: false
+    timeout_seconds: 15
+    headers_env: {}

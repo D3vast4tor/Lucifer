@@ -1,0 +1,28 @@
+models:
+  - id: demo
+    backend: demo
+    description: "Explicit demonstration backend; no LLM weights or learning"
+  - id: lucifer-small
+    backend: vllm
+    path: Qwen/Qwen3.5-4B
+    served_model_name: Lucifer
+    port: 8091
+    context_length: 4096
+    max_output_tokens: 2048
+    gpu_memory_utilization: 0.8
+    enable_lora: true
+    max_loras: 1
+    max_lora_rank: 32
+    gpu_devices: all
+    chat_template_kwargs: {enable_thinking: false}
+    extra_args: ["--language-model-only", "--enforce-eager", "--max-num-seqs", "1", "--max-num-batched-tokens", "512"]
+  - id: gguf
+    backend: llama.cpp
+    path: /models/model.gguf
+    port: 8092
+    context_length: 4096
+    n_gpu_layers: -1
+  - id: external
+    backend: external
+    endpoint: http://127.0.0.1:8080/v1
+    served_model_name: local-model
